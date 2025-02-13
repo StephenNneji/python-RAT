@@ -152,19 +152,16 @@ def test_sld_profile_function_call(mock: MagicMock) -> None:
     assert mock.call_args_list[0].args[1] == 6.28e-06
     assert mock.call_args_list[0].args[2] == 0.0
     assert mock.call_args_list[0].args[4] == 82
-    assert mock.call_args_list[0].args[5] == 1.0
 
     assert mock.call_args_list[1].args[0] == 2.07e-06
     assert mock.call_args_list[1].args[1] == 1.83e-06
     assert mock.call_args_list[1].args[2] == 0.0
     assert mock.call_args_list[1].args[4] == 128
-    assert mock.call_args_list[1].args[5] == 1.0
 
     assert mock.call_args_list[2].args[0] == 2.07e-06
     assert mock.call_args_list[2].args[1] == -5.87e-07
     assert mock.call_args_list[2].args[2] == 0.0
     assert mock.call_args_list[2].args[4] == 153
-    assert mock.call_args_list[2].args[5] == 1.0
 
 
 @patch("RATapi.utils.plotting.makeSLDProfileXY")
@@ -182,19 +179,16 @@ def test_live_plot(mock: MagicMock) -> None:
     assert mock.call_args_list[0].args[1] == 6.28e-06
     assert mock.call_args_list[0].args[2] == 0.0
     assert mock.call_args_list[0].args[4] == 82
-    assert mock.call_args_list[0].args[5] == 1.0
 
     assert mock.call_args_list[1].args[0] == 2.07e-06
     assert mock.call_args_list[1].args[1] == 1.83e-06
     assert mock.call_args_list[1].args[2] == 0.0
     assert mock.call_args_list[1].args[4] == 128
-    assert mock.call_args_list[1].args[5] == 1.0
 
     assert mock.call_args_list[2].args[0] == 2.07e-06
     assert mock.call_args_list[2].args[1] == -5.87e-07
     assert mock.call_args_list[2].args[2] == 0.0
     assert mock.call_args_list[2].args[4] == 153
-    assert mock.call_args_list[2].args[5] == 1.0
 
 
 @patch("RATapi.utils.plotting.plot_ref_sld_helper")

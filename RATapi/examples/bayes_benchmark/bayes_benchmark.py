@@ -288,15 +288,15 @@ def bayes_benchmark_3d(grid_size: int) -> (RAT.outputs.BayesResults, Calculation
 
 
 def plot_posterior_comparison(
-    ns_results: RAT.outputs.BayesResults, dream_results: RAT.outputs.BayesResults, calc_results: CalculationResults
+    ns_results: RATapi.outputs.BayesResults, dream_results: RATapi.outputs.BayesResults, calc_results: CalculationResults
 ):
     """Create a grid of marginalised posteriors comparing different calculation methods.
 
     Parameters
     ----------
-    ns_results : RAT.BayesResults
+    ns_results : RATapi.BayesResults
         The BayesResults object from a nested sampler calculation.
-    dream_results : RAT.BayesResults
+    dream_results : RATapi.BayesResults
         The BayesResults object from a DREAM calculation.
     calc_results : CalculationResults
         The results from a direct calculation.

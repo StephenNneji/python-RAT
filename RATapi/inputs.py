@@ -100,20 +100,20 @@ def make_input(project: RATapi.Project, controls: RATapi.Controls) -> tuple[Prob
 
     Parameters
     ----------
-    project : RAT.Project
+    project : RATapi.Project
         The project model, which defines the physical system under study.
-    controls : RAT.Controls
+    controls : RATapi.Controls
         The controls model, which defines algorithmic properties.
 
     Returns
     -------
-    problem : RAT.rat_core.ProblemDefinition
+    problem : RATapi.rat_core.ProblemDefinition
         The problem input used in the compiled RAT code.
-    limits : RAT.rat_core.Limits
-        A list of min/max values for each parameter defined in the project.
-    priors : RAT.rat_core.Priors
+    limits : RATapi.rat_core.Limits
+        Min and max values for each parameter defined in the project.
+    priors : RATapi.rat_core.Priors
         The priors defined for each parameter in the project.
-    cpp_controls : RAT.rat_core.Control
+    cpp_controls : RATapi.rat_core.Control
         The controls object used in the compiled RAT code.
 
     """
@@ -174,12 +174,12 @@ def make_problem(project: RATapi.Project, checks: Checks) -> ProblemDefinition:
 
     Parameters
     ----------
-    project : RAT.Project
+    project : RATapi.Project
         The project model, which defines the physical system under study.
 
     Returns
     -------
-    problem : RAT.rat_core.ProblemDefinition
+    problem : RATapi.rat_core.ProblemDefinition
         The problem input used in the compiled RAT code.
 
     """
@@ -409,7 +409,7 @@ def make_resample(project: RATapi.Project) -> list[int]:
 
     Parameters
     ----------
-    project : RAT.Project
+    project : RATapi.Project
         The project model, which defines the physical system under study.
 
     Returns
@@ -426,7 +426,7 @@ def make_data_present(project: RATapi.Project) -> list[int]:
 
     Parameters
     ----------
-    project : RAT.Project
+    project : RATapi.Project
         The project model, which defines the physical system under study.
 
     Returns
@@ -444,7 +444,7 @@ def check_indices(problem: ProblemDefinition) -> None:
 
     Parameters
     ----------
-    problem : RAT.rat_core.ProblemDefinition
+    problem : RATapi.rat_core.ProblemDefinition
         The problem input used in the compiled RAT code.
 
     """
@@ -532,14 +532,14 @@ def make_controls(input_controls: RATapi.Controls) -> Control:
 
     Parameters
     ----------
-    input_controls : RAT.Controls
+    input_controls : RATapi.Controls
         The controls model, which defines algorithmic properties.
-    checks : Rat.rat_core.Checks
+    checks : RATapi.rat_core.Checks
         States whether or not to fit each parameter defined in the project.
 
     Returns
     -------
-    controls : RAT.rat_core.Control
+    controls : RATapi.rat_core.Control
         The controls object used in the compiled RAT code.
 
     """
