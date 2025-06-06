@@ -106,13 +106,18 @@ class EventBridge
     EventBridge(py::function callback)
     {   
         std::string filename = "eventManager" + std::string(dylib::extension);
+        py::print(31, std::getenv("RAT_PATH"), filename.c_str());
         this->library = std::unique_ptr<dylib>(new dylib(std::getenv("RAT_PATH"), filename.c_str()));
+        py::print(32);
         if (!library)
         {
+            py::print(33);
             std::cerr << "event manager dynamic library failed to load" << std::endl;
+            py::print(34);
             return;
         }
         this->callback = callback;
+        py::print(35);
     };
     
     py::list unpackDataToCell(int rows, int cols, double* data, double* nData, 
@@ -209,9 +214,13 @@ class EventBridge
 
     void registerEvent(EventTypes eventType)
     {
+        py::print(36);
         std::function<void(const baseEvent& event)> caller = std::bind(&EventBridge::eventCallback, this, std::placeholders::_1);
+        py::print(37);
         auto addListener = library->get_function<void(EventTypes, std::function<void(const baseEvent&)>)>("addListener");
-        addListener(eventType, caller);    
+        py::print(38);
+        addListener(eventType, caller);
+        py::print(39);
     };
 
     void clear()
