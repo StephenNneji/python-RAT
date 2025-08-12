@@ -63,7 +63,7 @@ jobs:
       - name: Install and Test with pytest
         run: |
           export PATH="$pythonLocation:$PATH"
-          python -m pip install pybind11 wheel
+          python -m pip install pybind11 wheel setuptools
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v4
         with:
