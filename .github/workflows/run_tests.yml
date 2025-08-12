@@ -67,5 +67,5 @@ jobs:
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.version }}
+          name: wheel-${{ matrix.version }}
           path: ./dist/*.whl 
