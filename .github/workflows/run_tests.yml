@@ -2,9 +2,9 @@ name: Run Unit Tests
 
 on:
   push:
-    branches: [ test_arm_again ]
+    branches: [ main ]
   pull_request:
-    branches: [ test_arm_again ]
+    branches: [ main ]
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}

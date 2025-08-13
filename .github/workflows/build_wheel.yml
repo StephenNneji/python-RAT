@@ -29,7 +29,7 @@ jobs:
       - name: Set up Python version ${{ matrix.version }}
         uses: actions/setup-python@v4
         with:
-          python-version: "3.x"
+          python-version: "3.11"
       - name: Install OMP (MacOS Intel) 
         if: matrix.platform == 'macos-13'
         run: |
@@ -70,3 +70,8 @@ jobs:
         with:
           name: wheels-${{ runner.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl 
+      - name: Install and Test with pytest
+        run: |
+          export PATH="$pythonLocation:$PATH"
+          python -m pip install ./wheelhouse/ratapi-0.0.0.dev7-cp311-cp311-macosx_11_0_arm64.whl
+          python test.py
