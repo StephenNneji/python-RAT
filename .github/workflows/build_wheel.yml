@@ -73,5 +73,6 @@ jobs:
       - name: Install and Test with pytest
         run: |
           export PATH="$pythonLocation:$PATH"
-          python -m pip install ./wheelhouse/ratapi-0.0.0.dev7-cp311-cp311-macosx_11_0_arm64.whl
-          python test.py
+          cd wheelhouse
+          python -m pip install ratapi-0.0.0.dev7-cp311-cp311-macosx_11_0_arm64.whl
+          python ../test.py
