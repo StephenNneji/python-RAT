@@ -11,6 +11,28 @@ from numpy.typing import ArrayLike
 import ratapi.rat_core
 
 
+
+def test_client():
+    import socket
+    import json
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
+    client.connect(("localhost", 4000))
+    
+    input = {"params": [1, 2, 3, 4, 5, 6, 7, 8], 
+             "bulk_in": [1,2,3],
+             "bulk_out": [1],
+             "contrast":1}
+    g = f"{json.dumps(input)}\n"
+    print(g)
+    #g = '{"params":[1,2,3,4,5,6,7,8],,"bulk_out":1,"contrast":1,"bulk_in":[1,2,3]}'
+    client.send(g.encode())
+    # client.send(g.encode())
+    # g = '{"params":[1,2,3,4,5,6,7,8],"buil_in":[1,2,3],"bulk_out":1,"contrast":1,"bulk_in":[1,2,3]}\n'
+    # client.send(g.encode())
+    result = client.recv(4096).decode().strip()
+    print(json.loads(result))
+
+
 def start_matlab():
     """Start MATLAB asynchronously and returns a future to retrieve the engine later.
 
@@ -47,10 +69,14 @@ class MatlabWrapper:
         if self.loader is None:
             raise ImportError(self.loader_error_message) from None
 
-        self.engine = self.loader.result()
-        path = pathlib.Path(filename)
-        self.engine.cd(str(path.parent), nargout=0)
-        self.function_name = path.stem
+        # self.engine = self.loader.result()
+        # path = pathlib.Path(filename)
+        # self.engine.cd(str(path.parent), nargout=0)
+        # self.function_name = path.stem
+        import socket
+        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
+        self.client.connect(("localhost", 4000))
+    
 
     def getHandle(self) -> Callable[[ArrayLike, ArrayLike, ArrayLike, int, int], tuple[ArrayLike, float]]:
         """Return a wrapper for the custom MATLAB function.
@@ -62,32 +88,45 @@ class MatlabWrapper:
 
         """
 
-        def handle(*args):
-            if len(args) == 2:
-                output = getattr(self.engine, self.function_name)(
-                    np.array(args[0], "float"),  # xdata
-                    np.array(args[1], "float"),  # params
-                    nargout=1,
-                )
-                return np.array(output, "float").tolist()
-            else:
-                matlab_args = [
-                    np.array(args[0], "float"),  # params
-                    np.array(args[1], "float"),  # bulk in
-                    np.array(args[2], "float"),  # bulk out
-                    float(args[3] + 1),  # contrast
-                ]
-                if len(args) > 4:
-                    matlab_args.append(float(args[4] + 1))  # domain number
+        # def handle(*args):
+        #     if len(args) == 2:
+        #         output = getattr(self.engine, self.function_name)(
+        #             np.array(args[0], "float"),  # xdata
+        #             np.array(args[1], "float"),  # params
+        #             nargout=1,
+        #         )
+        #         return np.array(output, "float").tolist()
+        #     else:
+        #         matlab_args = [
+        #             np.array(args[0], "float"),  # params
+        #             np.array(args[1], "float"),  # bulk in
+        #             np.array(args[2], "float"),  # bulk out
+        #             float(args[3] + 1),  # contrast
+        #         ]
+        #         if len(args) > 4:
+        #             matlab_args.append(float(args[4] + 1))  # domain number
 
-                output, sub_rough = getattr(self.engine, self.function_name)(
-                    *matlab_args,
-                    nargout=2,
-                )
-                return np.array(output, "float").tolist(), float(sub_rough)
+        #         output, sub_rough = getattr(self.engine, self.function_name)(
+        #             *matlab_args,
+        #             nargout=2,
+        #         )
+        #         return np.array(output, "float").tolist(), float(sub_rough)
+
+        # return handle
+        def handle(*args):
+            import json
+            input = {"params": args[0], 
+                     "bulk_in": args[1],
+                     "bulk_out": args[2],
+                     "contrast": args[3]+1,
+                     }
+            g = f"{json.dumps(input)}\n"
+            self.client.send(g.encode())
+            result = self.client.recv(4096).decode().strip()
+            output, sub_rough = json.loads(result)
+            return np.array(output, "float").tolist(), float(sub_rough)
 
         return handle
-
 
 def use_shared_matlab(name, custom_error_message):
     """Connect asynchronously to shared MATLAB engine instance with the given name.
@@ -142,3 +181,7 @@ class DylibWrapper:
             return self.engine.invoke(*args)
 
         return handle
+
+
+# if __name__ == "__main__":
+#     test_client()
