@@ -32,7 +32,7 @@ jobs:
       - name: Set up Python version
         uses: actions/setup-python@v6
         with:
-          python-version: "3.x"
+          python-version: "3.13"
       - name: Install OMP (MacOS Intel) 
         if: matrix.platform == 'macos-15-intel'
         run: |
