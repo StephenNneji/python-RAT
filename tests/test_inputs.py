@@ -483,6 +483,19 @@ def test_make_problem(test_project, test_problem, request) -> None:
     check_problem_equal(problem, test_problem)
 
 
+def test_make_problem_validate_range(request) -> None:
+    """The problem should not contain fitted parameters with small range."""
+    test_project = request.getfixturevalue("standard_layers_project")
+
+    test_project.scalefactors.set_fields(0, min=10, value=10, max=10, fit=True)
+    problem = make_problem(test_project)
+    assert problem.checks.scalefactors[0] == 1
+
+    with pytest.warns(UserWarning, match="was removed from the fit because its range is too small \(< 1e-10\)"):
+        problem = make_problem(test_project, True)
+    assert problem.checks.scalefactors[0] == 0
+
+
 @pytest.mark.parametrize("test_problem", ["standard_layers_problem", "custom_xy_problem", "domains_problem"])
 class TestCheckIndices:
     """Tests for check_indices over a set of three test problems."""
