@@ -932,10 +932,10 @@ from numpy import array, empty, inf
 
         Returns
         -------
-        json_dict : dict
+        model_dict : dict
             A dict containing the model information.
         """
-        json_dict = {}
+        model_dict = {}
         for field in self.model_fields:
             attr = getattr(self, field)
 
@@ -949,7 +949,7 @@ from numpy import array, empty, inf
                         "simulation_range": item.simulation_range,
                     }
 
-                json_dict["data"] = [make_data_dict(data) for data in attr]
+                model_dict["data"] = [make_data_dict(data) for data in attr]
 
             elif field == "custom_files":
 
@@ -965,13 +965,13 @@ from numpy import array, empty, inf
 
                     return file_dict
 
-                json_dict["custom_files"] = [make_custom_file_dict(file) for file in attr]
+                model_dict["custom_files"] = [make_custom_file_dict(file) for file in attr]
 
             elif isinstance(attr, ClassList):
-                json_dict[field] = [item.model_dump() for item in attr]
+                model_dict[field] = [item.model_dump() for item in attr]
             else:
-                json_dict[field] = attr
-        return json_dict
+                model_dict[field] = attr
+        return model_dict
 
     def save(self, filepath: str | Path = "./project.json"):
         """Save a project to a JSON file.

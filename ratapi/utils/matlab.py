@@ -18,14 +18,16 @@ cd(cur_dir);
 
 project = jsonToProject('{project}');
 controls = jsonToControls('{control}');
+customControls = customControl();
+customControls.update(controls);
+customControls.filePath = '{ipc_path}';
 if any(strcmpi(controls.procedure, {{procedures.DE.value, procedures.Simplex.value}}))
-    disp("hello")
     useLivePlot(1);
 end
 for i=1:project.customFile.rowCount
     addpath(project.customFile.varTable{{i, 5}});
 end
-[project, results] = RAT(project, controls);
+[project, results] = RAT(project, customControls);
 
 projectToJson(project, '{project}');
 resultsToJson(results, '{result}');
@@ -34,7 +36,26 @@ end
 """
 
 
-def run_matlab_directly(project, controls, matlab_rat_path, stdout=None, stderr=None):
+CONTROL = """classdef customControl < controlsClass
+   properties(Hidden = true)
+        filePath = ''
+   end
+   methods
+      function update(obj, controls)
+        propNames = properties(controls);
+        for i = 1:length(propNames)
+          obj.(propNames{i}) = controls.(propNames{i});
+        end
+      end 
+      function path = getIPCFilePath(obj)
+        path = obj.filePath;
+      end 
+   end
+end
+"""
+
+
+def run_matlab_directly(project, controls, matlab_rat_path, ipc_path="", stdout=None, stderr=None):
     """Run User provided MATLAB RAT for the given project and controls inputs.
 
     Parameters
@@ -45,6 +66,8 @@ def run_matlab_directly(project, controls, matlab_rat_path, stdout=None, stderr=
         The controls model (or equivalent json dict), which defines algorithmic properties.
     matlab_rat_path : str
         The path to MATLAB RAT folder.
+    ipc_path : str, optional
+        IPC path for MATLAB to use
     stdout : io.TextIOBase, optional
         Text stream for MATLAB console output
     stderr : io.TextIOBase, optional
@@ -60,10 +83,19 @@ def run_matlab_directly(project, controls, matlab_rat_path, stdout=None, stderr=
         control_file = Path(tmp, "controls.json")
         result_file = Path(tmp, "results.json")
         runner_file = Path(tmp, "executeRAT.m")
+        custom_controls_file = Path(tmp, "customControl.m")
+        with open(custom_controls_file, "w") as f:
+            f.write(CONTROL)
 
         with open(runner_file, "w") as f:
             f.write(
-                RUNNER.format(project=project_file, control=control_file, result=result_file, rat_path=matlab_rat_path)
+                RUNNER.format(
+                    project=project_file,
+                    control=control_file,
+                    result=result_file,
+                    rat_path=matlab_rat_path,
+                    ipc_path=ipc_path,
+                )
             )
 
         controls.save(control_file) if not isinstance(controls, dict) else control_file.write_text(json.dumps(controls))
