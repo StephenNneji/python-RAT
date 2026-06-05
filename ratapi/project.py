@@ -927,7 +927,7 @@ from numpy import array, empty, inf
             + "\n)"
         )
 
-    def model_dump(self):
+    def to_dict(self):
         """Generate a dictionary representation of the model.
 
         Returns
@@ -982,7 +982,7 @@ from numpy import array, empty, inf
             The path to where the project file will be written.
         """
         filepath = Path(filepath).with_suffix(".json")
-        json_dict = self.model_dump()
+        json_dict = self.to_dict()
         for file in json_dict["custom_files"]:
             file["path"] = try_relative_to(file["path"], filepath.parent)
         filepath.write_text(json.dumps(json_dict))
