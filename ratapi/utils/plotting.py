@@ -234,6 +234,46 @@ def plot_ref_sld_helper(
         plt.pause(0.005)
 
 
+def _align_profiles(data: PlotEventData):
+    """Align SLD profiles and resampled layers.
+
+    Aligns the A/L SLD profiles so that the substrates line up by padding the 
+    start of any shorter than the longest profile.
+
+    Parameters
+    ----------
+    data : PlotEventData
+        The plot event data that contains all the information
+        to generate the ref and sld plots
+    """
+    slds = data.sldProfiles
+    size = (len(slds), len(slds[0]))
+
+    # Find the length of the longest profile.
+    lengths = [[sld.shape[0] for sld in sld_row] for sld_row in slds] 
+    max_value = np.max(lengths)
+    max_index = np.unravel_index(np.argmax(lengths), shape=size)
+
+    max_x = slds[max_index[0]][max_index[1]][:, 0] 
+    max_x_value = max_x[-1]
+    
+    for i in range(size[0]):
+        for j in range(size[1]):
+            cur_sld = slds[i][j]
+            diff = max_value - cur_sld.shape[0]
+            if diff:
+                pad = np.zeros((max_value, 2))
+                pad[:, 0] = max_x
+                pad[diff:, 1] = cur_sld[:, 1]
+                slds[i][j] = pad
+
+                cur_resample_layer = data.resampledLayers[i][j]
+                if not np.all(cur_resample_layer):
+                    total_length = sum(cur_resample_layer[:, 0])
+                    pad = max_x_value - total_length
+                    data.resampledLayers[i][j] = np.vstack([[pad, 0, 0], cur_resample_layer])
+        
+
 def plot_ref_sld(
     project: ratapi.Project,
     results: ratapi.outputs.Results | ratapi.outputs.BayesResults,
