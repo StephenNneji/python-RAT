@@ -537,7 +537,7 @@ class TestCheckIndices:
 
         source_param_lists = {
             "constant": "backgroundParams",
-            "data": "data",
+            "data": "backgroundParams",
             "function": "customFiles",
         }
 
