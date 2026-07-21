@@ -534,17 +534,18 @@ class TestCheckIndices:
         test_problem = request.getfixturevalue(test_problem)
         test_problem.contrastBackgroundParams = bad_value
         test_problem.contrastBackgroundTypes = [background_type]
-
         source_param_lists = {
             "constant": "backgroundParams",
-            "data": "data",
+            "data": "backgroundParams",
             "function": "customFiles",
         }
+
+        first_entry_name = "data offset" if background_type == "data" else "source"
 
         with pytest.raises(
             IndexError,
             match=f'Entry 0 of contrastBackgroundParams has type "{background_type}" '
-            f"and source index {bad_value[0][0]}, "
+            f"and {first_entry_name} index {bad_value[0][0]}, "
             f'which is outside the range of "{source_param_lists[background_type]}".',
         ):
             check_indices(test_problem)

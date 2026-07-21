@@ -204,9 +204,14 @@ def test_plot_ref_sld(mock: MagicMock, input_project, reflectivity_calculation_r
         for sld, sld_results in zip(sldProfile, result_sld_profile, strict=False):
             assert (sld == sld_results).all()
 
+    for resampledLayers, reflectivity_results in zip(
+        data.resampledLayers, reflectivity_calculation_results.resampledLayers, strict=False
+    ):
+        for resam, resam_results in zip(resampledLayers, reflectivity_results, strict=False):
+            assert (resam == resam_results).all()
+
     assert data.modelType == input_project.model
     assert data.shiftedData == reflectivity_calculation_results.shiftedData
-    assert data.resampledLayers == reflectivity_calculation_results.resampledLayers
     assert data.dataPresent.size == 0
     assert (data.subRoughs == reflectivity_calculation_results.contrastParams.subRoughs).all()
     assert data.resample.size == 0

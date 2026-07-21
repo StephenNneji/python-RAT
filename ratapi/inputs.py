@@ -243,7 +243,7 @@ def make_problem(project: ratapi.Project) -> ProblemDefinition:
         contrast_background_param = []
 
         if background.type == TypeOptions.Data:
-            contrast_background_param.append(project.data.index(background.source, True))
+            # Background data is appended to contrast data so empty index
             if background.value_1 != "":
                 contrast_background_param.append(project.background_parameters.index(background.value_1))
             # If we are using a data background, we add the background data to the contrast data
@@ -492,7 +492,7 @@ def check_indices(problem: ProblemDefinition) -> None:
 
     source_param_lists = {
         "constant": "backgroundParams",
-        "data": "data",
+        "data": "backgroundParams",
         "function": "customFiles",
     }
 
@@ -501,11 +501,13 @@ def check_indices(problem: ProblemDefinition) -> None:
 
         # check source param is in range of the relevant parameter list
         param_list = getattr(problem, source_param_lists[background_type])
-        source_index = background_data[0]
-        if not 0 < source_index <= len(param_list):
+        # For data, background data is appended to the contrast data so first index could
+        # either be empty or be the index of an offset.
+        if background_data and not 0 < background_data[0] <= len(param_list):
+            first_entry_name = "data offset" if background_type == "data" else "source"
             raise IndexError(
                 f'Entry {i} of contrastBackgroundParams has type "{background_type}" '
-                f"and source index {source_index}, "
+                f"and {first_entry_name} index {background_data[0]}, "
                 f'which is outside the range of "{source_param_lists[background_type]}".'
             )
 

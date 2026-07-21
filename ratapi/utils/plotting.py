@@ -60,6 +60,7 @@ def _extract_plot_data(event_data: PlotEventData, q4: bool, show_error_bar: bool
         # Plot the reflectivity on plot (1,1)
         results["ref"].append([r[:, 0], r[:, 1] * mult])
 
+        results["error"].append([])
         if event_data.dataPresent[i]:
             sd_x = data[:, 0]
             sd_y, sd_e = map(lambda x: x * mult, (data[:, 1], data[:, 2]))
@@ -73,7 +74,7 @@ def _extract_plot_data(event_data: PlotEventData, q4: bool, show_error_bar: bool
                 valid = np.ones(len(sd_e)).astype(bool)
                 sd_e = errors
 
-            results["error"].append([sd_x[valid], sd_y[valid], sd_e[valid]])
+            results["error"][-1].extend([sd_x[valid], sd_y[valid], sd_e[valid]])
 
         results["sld"].append([])
         for j in range(len(sld)):
@@ -111,6 +112,7 @@ def plot_ref_sld_helper(
     show_legend: bool = True,
     shift_value: float = 100,
     animated=False,
+    align_profile=False,
 ):
     """Clear the previous plots and updates the ref and SLD plots.
 
@@ -160,6 +162,8 @@ def plot_ref_sld_helper(
     ref_plot.cla()
     sld_plot.cla()
 
+    if align_profile:
+        _align_profiles(data, confidence_intervals)
     plot_data = _extract_plot_data(data, q4, show_error_bar, shift_value)
     for i, name in enumerate(data.contrastNames):
         ref_plot.plot(plot_data["ref"][i][0], plot_data["ref"][i][1], label=name, linewidth=1, animated=animated)
@@ -234,6 +238,54 @@ def plot_ref_sld_helper(
         plt.pause(0.005)
 
 
+def _align_profiles(data: PlotEventData, confidence_intervals: dict | None = None):
+    """Align SLD profiles and resampled layers.
+
+    Aligns the A/L SLD profiles so that the substrates line up by padding the
+    start of any shorter than the longest profile.
+
+    Parameters
+    ----------
+    data : PlotEventData
+        The plot event data that contains all the information
+        to generate the ref and sld plots
+    confidence_intervals : dict or None, default None
+        The Bayesian confidence intervals for reflectivity and SLD.
+        Only relevant if the procedure used is Bayesian (NS or DREAM)
+    """
+    slds = data.sldProfiles
+    size = (len(slds), len(slds[0]))
+
+    # Find the length of the longest profile.
+    lengths = [[sld.shape[0] for sld in sld_row] for sld_row in slds]
+    max_value = np.max(lengths)
+    max_index = np.unravel_index(np.argmax(lengths), shape=size)
+
+    max_x = slds[max_index[0]][max_index[1]][:, 0]
+    max_x_value = max_x[-1]
+
+    for i in range(size[0]):
+        for j in range(size[1]):
+            cur_sld = slds[i][j]
+            diff = max_value - cur_sld.shape[0]
+            if diff:
+                pad = np.zeros(diff)
+                max_y = np.concatenate((pad, cur_sld[:, 1]))
+                slds[i][j] = np.column_stack((max_x, max_y))
+
+                cur_resample_layer = data.resampledLayers[i][j]
+                if not np.all(cur_resample_layer):
+                    total_length = sum(cur_resample_layer[:, 0])
+                    offset = max_x_value - total_length
+                    data.resampledLayers[i][j] = np.vstack(([offset, 0, 0], cur_resample_layer))
+
+                if confidence_intervals is not None:
+                    cur_ci = confidence_intervals["sld"][i][j]
+                    inter_a = np.concatenate((pad, cur_ci[0]))
+                    inter_b = np.concatenate((pad, cur_ci[1]))
+                    confidence_intervals["sld"][i][j] = (inter_a, inter_b)
+
+
 def plot_ref_sld(
     project: ratapi.Project,
     results: ratapi.outputs.Results | ratapi.outputs.BayesResults,
@@ -294,7 +346,7 @@ def plot_ref_sld(
     data.reflectivity = copy.deepcopy(results.reflectivity)
     data.shiftedData = results.shiftedData
     data.sldProfiles = copy.deepcopy(results.sldProfiles)
-    data.resampledLayers = results.resampledLayers
+    data.resampledLayers = copy.deepcopy(results.resampledLayers)
     data.dataPresent = ratapi.inputs.make_data_present(project)
     data.subRoughs = results.contrastParams.subRoughs
     data.resample = ratapi.inputs.make_resample(project)
@@ -355,6 +407,7 @@ def plot_ref_sld(
         show_grid=show_grid,
         show_legend=show_legend,
         shift_value=shift_value,
+        align_profile=(project.geometry == "air/substrate" and project.model != "custom xy"),
     )
 
     if return_fig:
@@ -533,13 +586,12 @@ class BlittingSupport:
         self.figure.canvas.restore_region(self.bg)
         plot_data = _extract_plot_data(data, self.q4, self.show_error_bar, self.shift_value)
 
-        offset = 2
-        for i in range(
-            0,
-            len(self.figure.axes[0].lines),
-        ):
-            self.figure.axes[0].lines[i].set_data(plot_data["ref"][i // offset][0], plot_data["ref"][i // offset][1])
-            self.figure.axes[0].draw_artist(self.figure.axes[0].lines[i])
+        offset = 0
+        for i in range(len(data.contrastNames)):
+            for _ in range(int(data.dataPresent[i]) + 1):
+                self.figure.axes[0].lines[offset].set_data(plot_data["ref"][i][0], plot_data["ref"][i][1])
+                self.figure.axes[0].draw_artist(self.figure.axes[0].lines[offset])
+                offset += 1
 
         i = 0
         for j in range(len(plot_data["sld"])):
@@ -553,12 +605,14 @@ class BlittingSupport:
                 self.figure.axes[1].draw_artist(self.figure.axes[1].lines[i])
                 i += 1
 
-        for i, container in enumerate(self.figure.axes[0].containers):
-            self.adjust_error_bar(
-                container, plot_data["error"][i][0], plot_data["error"][i][1], plot_data["error"][i][2]
-            )
-            self.figure.axes[0].draw_artist(container[2][0])
-            self.figure.axes[0].draw_artist(container[0])
+        i = 0
+        for error in plot_data["error"]:
+            if error:
+                container = self.figure.axes[0].containers[i]
+                self.adjust_error_bar(container, error[0], error[1], error[2])
+                self.figure.axes[0].draw_artist(container[2][0])
+                self.figure.axes[0].draw_artist(container[0])
+                i += 1
 
         self.figure.canvas.blit(self.figure.bbox)
         self.figure.canvas.flush_events()

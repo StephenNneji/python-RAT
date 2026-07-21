@@ -66,6 +66,33 @@ def r1_to_project(filename: str | PathLike) -> Project:
             return zip(*params, strict=False)
         return [params]
 
+    def __opaque_to_string(opaque):
+        """Extract java string from MATLABOpaque object.
+
+        Parameters
+        ----------
+        opaque : MATLABOpaque
+            object containing java string.
+
+        Returns
+        -------
+        str
+            string extracted from object.
+
+        Raises
+        ------
+        ValueError
+            Raised if there is no java string array in the object.
+        """
+        entries = opaque[0]
+        for entry in entries:
+            if isinstance(entry, ndarray):
+                break
+        else:
+            raise ValueError("No array in MatlabOpaque")
+
+        return bytes(entry[7:]).decode("ascii")
+
     def read_param(names, constrs, values, fits):
         """Read in a parameter list from the relevant keys, and fix constraints for non-fit parameters.
 
@@ -217,11 +244,11 @@ def r1_to_project(filename: str | PathLike) -> Project:
     # which is given as the byte data of a Java string; this consists of 7 metadata bytes (ignored)
     # and then the actual string characters (index [7:]) in ascii format (.decode("ascii"))
     if len(mat_project["contrastNames"]) == 1 and isinstance(mat_project["contrastNames"], MatlabOpaque):
-        mat_project["contrastNames"] = bytes(mat_project["contrastNames"][0][3][7:]).decode("ascii")
+        mat_project["contrastNames"] = __opaque_to_string(mat_project["contrastNames"])
     else:
         for i, contrast_name in enumerate(mat_project["contrastNames"]):
             if isinstance(contrast_name, MatlabOpaque):
-                mat_project["contrastNames"][i] = bytes(contrast_name[0][3][7:]).decode("ascii")
+                mat_project["contrastNames"][i] = __opaque_to_string(contrast_name)
 
     # if just one contrast, resolNames is a string; fix that here
     if isinstance(mat_project["resolNames"], str):
