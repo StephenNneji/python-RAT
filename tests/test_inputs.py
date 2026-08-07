@@ -491,7 +491,7 @@ def test_make_problem_validate_range(request) -> None:
     problem = make_problem(test_project)
     assert problem.checks.scalefactors[0] == 1
 
-    with pytest.warns(UserWarning, match="was removed from the fit because its range is too small \(< 1e-10\)"):
+    with pytest.warns(UserWarning, match="was removed from the fit because its range is too small \(< 1e-06\)"):
         problem = make_problem(test_project, True)
     assert problem.checks.scalefactors[0] == 0
 

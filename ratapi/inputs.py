@@ -366,10 +366,11 @@ def make_problem(project: ratapi.Project, validate_range: bool = False) -> Probl
             prior_values.append([prior_id[param.prior_type], param.mu, param.sigma])
             check_list.append(int(param.fit))
             if param.fit:
-                if validate_range and (param.max - param.min) < 1e-10:
+                min_range = abs(param.value) * 1e-6 if param.value == 0 else 1e-6
+                if validate_range and (param.max - param.min) < min_range:
                     warnings.warn(
                         f'{class_list.replace("_", " ").title()} "{param.name}" was removed from the '
-                        "fit because its range is too small (< 1e-10).",
+                        f"fit because its range is too small (< {min_range:g}).",
                         stacklevel=2,
                     )
                     check_list[-1] = 0
