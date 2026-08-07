@@ -22,7 +22,7 @@ def DSPC_standard_layers():
     problem.parameters.append(name="SAM Tails Hydration", min=1.0, value=5.252, max=50.0, fit=True)
     problem.parameters.append(name="SAM Roughness", min=1.0, value=5.64, max=15.0, fit=True)
     problem.parameters.append(name="CW Thickness", min=10.0, value=17.12, max=28.0, fit=True)
-    problem.parameters.append(name="CW SLD", min=0.0, value=0.0, max=1e-09, fit=False)
+    problem.parameters.append(name="CW SLD", min=0.0, value=0.0, max=0.0, fit=False)
 
     problem.parameters.append(
         name="SAM Heads Thickness",
@@ -131,8 +131,8 @@ def DSPC_standard_layers():
 
     # Set the scalefactors - use one for each contrast
     del problem.scalefactors[0]
-    problem.scalefactors.append(name="Scalefactor 1", min=0.05, value=0.10, max=0.2, fit=False)
-    problem.scalefactors.append(name="Scalefactor 2", min=0.05, value=0.15, max=0.2, fit=False)
+    problem.scalefactors.append(name="Scalefactor 1", min=0.05, value=0.10, max=0.2, fit=True)
+    problem.scalefactors.append(name="Scalefactor 2", min=0.05, value=0.15, max=0.2, fit=True)
 
     # Now deal with the backgrounds
     del problem.backgrounds[0]
