@@ -31,6 +31,10 @@ end
 eventManager.register(eventTypes.Message, @(x) logger('{msg_log_path}', x));
 eventManager.register(eventTypes.Progress, @(x) logger('{progress_log_path}', x));
 eventManager.register(eventTypes.Plot, @(x) logger('{plot_log_path}', x));
+global RAT_PROGRESS_UPDATE_FREQ RAT_PROGRESS_UPDATE_COUNT
+RAT_PROGRESS_UPDATE_FREQ = {progress_event_freq};
+RAT_PROGRESS_UPDATE_COUNT = -1;
+
 [project, results] = RAT(project, customControls);
 
 projectToJson(project, '{project}');
@@ -60,15 +64,21 @@ end
 """
 
 LOGGER = """function logger(logPath, data)
-    fid = fopen(logPath, "a");
-    cleanup = onCleanup(@() fclose(fid));
+
     if isstruct(data)
         entry = plotDataToJson(data);
     elseif iscell(data)
+        global RAT_PROGRESS_UPDATE_FREQ RAT_PROGRESS_UPDATE_COUNT;
+        RAT_PROGRESS_UPDATE_COUNT = RAT_PROGRESS_UPDATE_COUNT + 1;
+        if rem(RAT_PROGRESS_UPDATE_COUNT, RAT_PROGRESS_UPDATE_FREQ) ~= 0
+            return
+        end
         entry = [data{1}, ',', num2str(data{2})];
     else
         entry = strip(data, 'right');
     end
+    fid = fopen(logPath, "a");
+    cleanup = onCleanup(@() fclose(fid));
     fprintf(fid, "%s\\n", entry);
 end
 
@@ -126,7 +136,9 @@ end
 """
 
 
-def run_matlab_directly(project, controls, matlab_rat_path, ipc_path="", stdout=None, stderr=None):
+def run_matlab_directly(
+    project, controls, matlab_rat_path, ipc_path="", stdout=None, stderr=None, progress_event_freq=10
+):
     """Run User provided MATLAB RAT for the given project and controls inputs.
 
     Parameters
@@ -138,11 +150,13 @@ def run_matlab_directly(project, controls, matlab_rat_path, ipc_path="", stdout=
     matlab_rat_path : str
         The path to MATLAB RAT folder.
     ipc_path : str, optional
-        IPC path for MATLAB to use
+        IPC path for MATLAB to use.
     stdout : io.TextIOBase, optional
-        Text stream for MATLAB console output
+        Text stream for MATLAB console output.
     stderr : io.TextIOBase, optional
-        Text stream for MATLAB console error output
+        Text stream for MATLAB console error output.
+     progress_event_freq : int, default: 10
+        Update frequency of the progress event.
     """
     if MatlabWrapper.loader is None:
         raise ImportError(MatlabWrapper.loader_error_message) from None
@@ -173,6 +187,7 @@ def run_matlab_directly(project, controls, matlab_rat_path, ipc_path="", stdout=
                     msg_log_path=msg_log_file,
                     progress_log_path=progress_log_file,
                     plot_log_path=plot_log_file,
+                    progress_event_freq=progress_event_freq,
                 )
             )
 
