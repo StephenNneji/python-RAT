@@ -130,7 +130,9 @@ def run(project, controls):
     # Update parameter values in project
     for class_list in ratapi.project.parameter_class_lists:
         for index, value in enumerate(getattr(problem_definition, parameter_field[class_list])):
-            getattr(project, class_list)[index].value = value
+            param = getattr(project, class_list)[index]
+            param.fit = bool(getattr(problem_definition.checks, parameter_field[class_list])[index])
+            param.value = value
 
     controls.delete_IPC()
 

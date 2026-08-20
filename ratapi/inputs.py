@@ -3,6 +3,7 @@
 import importlib
 import os
 import pathlib
+import warnings
 from collections.abc import Callable
 
 import numpy as np
@@ -10,7 +11,7 @@ import numpy as np
 import ratapi
 import ratapi.wrappers
 from ratapi.rat_core import Checks, Control, NameStore, ProblemDefinition
-from ratapi.utils.enums import Calculations, Languages, LayerModels, TypeOptions
+from ratapi.utils.enums import Calculations, Languages, LayerModels, Procedures, TypeOptions
 
 parameter_field = {
     "parameters": "params",
@@ -137,19 +138,21 @@ def make_input(project: ratapi.Project, controls: ratapi.Controls) -> tuple[Prob
         The controls object used in the compiled RAT code.
 
     """
-    problem = make_problem(project)
+    problem = make_problem(project, controls.procedure != Procedures.Calculate)
     cpp_controls = make_controls(controls)
 
     return problem, cpp_controls
 
 
-def make_problem(project: ratapi.Project) -> ProblemDefinition:
+def make_problem(project: ratapi.Project, validate_range: bool = False) -> ProblemDefinition:
     """Construct the problem input required for the compiled RAT code.
 
     Parameters
     ----------
     project : RAT.Project
         The project model, which defines the physical system under study.
+    validate_range : bool, default True
+        Whether parameter range should be validated.
 
     Returns
     -------
@@ -351,39 +354,42 @@ def make_problem(project: ratapi.Project) -> ProblemDefinition:
     problem.domainContrastLayers = [
         domain_contrast_model if domain_contrast_model else [] for domain_contrast_model in domain_contrast_models
     ]
-    problem.fitParams = [
-        param.value
-        for class_list in ratapi.project.parameter_class_lists
-        for param in getattr(project, class_list)
-        if param.fit
-    ]
-    problem.fitLimits = [
-        [param.min, param.max]
-        for class_list in ratapi.project.parameter_class_lists
-        for param in getattr(project, class_list)
-        if param.fit
-    ]
-    problem.priorNames = [
-        param.name for class_list in ratapi.project.parameter_class_lists for param in getattr(project, class_list)
-    ]
-    problem.priorValues = [
-        [prior_id[param.prior_type], param.mu, param.sigma]
-        for class_list in ratapi.project.parameter_class_lists
-        for param in getattr(project, class_list)
-    ]
+
+    fit_params = []
+    fit_limits = []
+    prior_names = []
+    prior_values = []
+    problem.checks = Checks()
+    for class_list in ratapi.project.parameter_class_lists:
+        field = parameter_field[class_list]
+        check_list = []
+        for param in getattr(project, class_list):
+            prior_names.append(param.name)
+            prior_values.append([prior_id[param.prior_type], param.mu, param.sigma])
+            check_list.append(int(param.fit))
+            if param.fit:
+                min_range = 1e-6 if param.value == 0 else abs(param.value) * 1e-6
+                if validate_range and (param.max - param.min) < min_range:
+                    warnings.warn(
+                        f'{class_list.replace("_", " ").title()} "{param.name}" was removed from the '
+                        f"fit because its range is too small (< {min_range:g}).",
+                        stacklevel=2,
+                    )
+                    check_list[-1] = 0
+                else:
+                    fit_params.append(param.value)
+                    fit_limits.append([param.min, param.max])
+        setattr(problem.checks, field, check_list)
+    problem.fitParams = fit_params
+    problem.fitLimits = fit_limits
+    problem.priorNames = prior_names
+    problem.priorValues = prior_values
 
     # Names
     problem.names = NameStore()
     for class_list in ratapi.project.parameter_class_lists:
         setattr(problem.names, parameter_field[class_list], [param.name for param in getattr(project, class_list)])
     problem.names.contrasts = [contrast.name for contrast in project.contrasts]
-
-    # Checks
-    problem.checks = Checks()
-    for class_list in ratapi.project.parameter_class_lists:
-        setattr(
-            problem.checks, parameter_field[class_list], [int(element.fit) for element in getattr(project, class_list)]
-        )
 
     check_indices(problem)
 
