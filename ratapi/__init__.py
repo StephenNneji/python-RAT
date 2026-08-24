@@ -9,7 +9,7 @@ from ratapi.controls import Controls
 from ratapi.outputs import BayesResults, Results
 from ratapi.project import Project
 from ratapi.run import run
-from ratapi.utils import convert, plotting
+from ratapi.utils import convert, matlab, plotting
 
 with suppress(ImportError):  # orsopy is an optional dependency
     from ratapi.utils import orso as orso
@@ -26,4 +26,5 @@ __all__ = [
     "run",
     "plotting",
     "convert",
+    "matlab",
 ]

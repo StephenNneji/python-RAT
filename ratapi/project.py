@@ -927,17 +927,15 @@ from numpy import array, empty, inf
             + "\n)"
         )
 
-    def save(self, filepath: str | Path = "./project.json"):
-        """Save a project to a JSON file.
+    def to_dict(self):
+        """Generate a dictionary representation of the model.
 
-        Parameters
-        ----------
-        filepath : str or Path
-            The path to where the project file will be written.
+        Returns
+        -------
+        model_dict : dict
+            A dict containing the model information.
         """
-        filepath = Path(filepath).with_suffix(".json")
-
-        json_dict = {}
+        model_dict = {}
         for field in self.model_fields:
             attr = getattr(self, field)
 
@@ -951,7 +949,7 @@ from numpy import array, empty, inf
                         "simulation_range": item.simulation_range,
                     }
 
-                json_dict["data"] = [make_data_dict(data) for data in attr]
+                model_dict["data"] = [make_data_dict(data) for data in attr]
 
             elif field == "custom_files":
 
@@ -960,20 +958,33 @@ from numpy import array, empty, inf
                         "name": item.name,
                         "filename": item.filename,
                         "language": item.language,
-                        "path": try_relative_to(item.path, filepath.parent),
+                        "path": str(item.path),
                     }
                     if item.name != item.function_name:
                         file_dict["function_name"] = item.function_name
 
                     return file_dict
 
-                json_dict["custom_files"] = [make_custom_file_dict(file) for file in attr]
+                model_dict["custom_files"] = [make_custom_file_dict(file) for file in attr]
 
             elif isinstance(attr, ClassList):
-                json_dict[field] = [item.model_dump() for item in attr]
+                model_dict[field] = [item.model_dump() for item in attr]
             else:
-                json_dict[field] = attr
+                model_dict[field] = attr
+        return model_dict
 
+    def save(self, filepath: str | Path = "./project.json"):
+        """Save a project to a JSON file.
+
+        Parameters
+        ----------
+        filepath : str or Path
+            The path to where the project file will be written.
+        """
+        filepath = Path(filepath).with_suffix(".json")
+        json_dict = self.to_dict()
+        for file in json_dict["custom_files"]:
+            file["path"] = try_relative_to(file["path"], filepath.parent)
         filepath.write_text(json.dumps(json_dict))
 
     @classmethod
